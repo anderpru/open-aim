@@ -4,9 +4,8 @@
 // whenever it changes. Clicks go back to the component through `actions`, so the task drawer,
 // delete dialog, play and paging work as before.
 //
-//   top:    latest run (wide) · this week as 7 day bars · month calendar
-//   middle: run timeline, newest first, grouped by day
-//   bottom: your tasks
+// Foco shows the latest run and weekly activity first, followed by recent sessions.
+// The calendar and full task breakdown remain available in an expandable section.
 
 const FEED_STEP = 10;
 const WEEKDAYS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
@@ -142,7 +141,7 @@ function timeline(d, shown) {
   const more = shown < d.rows.length || d.hasMore;
   const count = Math.min(shown, d.rows.length);
   return `<section class="hx-runs">
-    <header class="hx-sec"><h3>Last ${count} runs</h3><span class="hx-kicker">All tasks, newest first · select a run to see every record for its task</span></header>
+    <header class="hx-sec"><h3>Last ${plural(count, 'run')}</h3><span class="hx-kicker">All tasks, newest first · select a run to see every record for its task</span></header>
     <div class="hx-timeline">${html || `<p class="hx-none">${d.loading ? 'Loading…' : 'No runs yet. Finish a run and it shows up here.'}</p>`}</div>
     ${more ? `<button type="button" class="hx-more" data-more ${d.loading ? 'disabled' : ''}>${d.loading ? 'Loading…' : `Show ${FEED_STEP} more`}</button>` : ''}
   </section>`;
@@ -171,6 +170,9 @@ const states = new WeakMap();
 
 function bind(el, st) {
   const openRun = id => { st.activeId = id; st.data?.actions?.openRun?.(id); };
+  el.addEventListener('toggle', event => {
+    if (event.target.classList?.contains('foco-history-detail')) st.expanded = event.target.open;
+  }, true);
   el.addEventListener('click', event => {
     const a = st.data?.actions; if (!a) return;
     const t = event.target;
@@ -200,10 +202,12 @@ function bind(el, st) {
 
 function draw(el, st) {
   const d = { ...st.data, activeId: st.activeId };
+  const foco = !!globalThis.__aimFoco;
   el.innerHTML = `<div class="hx ${st.drawn ? '' : 'is-entering'}">
-    <div class="hx-top">${latestCard(d)}${weekCard(d)}${calendarCard(d, st.month)}</div>
+    ${foco ? '<header class="foco-history-head"><h1>Your progress</h1><p>Your recent sessions and weekly consistency, in one place.</p></header>' : ''}
+    <div class="hx-top">${latestCard(d)}${weekCard(d)}${foco ? '' : calendarCard(d, st.month)}</div>
     ${timeline(d, st.shown)}
-    ${taskCards(d)}
+    ${foco ? `<details class="foco-history-detail" ${st.expanded ? 'open' : ''}><summary>Calendar & task breakdown</summary>${calendarCard(d, st.month)}${taskCards(d)}</details>` : taskCards(d)}
   </div>`;
   st.drawn = true;
 }
@@ -211,7 +215,7 @@ function draw(el, st) {
 function render(el, input) {
   if (!el) return;
   let st = states.get(el);
-  if (!st) { st = { shown: FEED_STEP, drawn: false, activeId: '', month: 0 }; states.set(el, st); bind(el, st); ensureStyle(); }
+  if (!st) { st = { shown: globalThis.__aimFoco ? 5 : FEED_STEP, drawn: false, activeId: '', month: 0 }; states.set(el, st); bind(el, st); ensureStyle(); }
   const days = input.days ?? [];
   st.data = {
     ...input, days, rows: days.flatMap(day => day.rows), tiles: input.tiles ?? [],

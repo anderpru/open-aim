@@ -89,6 +89,9 @@ const HIDE_CSS = `
 const UI_CSS = fs.readFileSync(path.join(__dirname, "ui.css"), "utf-8");
 // Esports broadcast look for the whole app (lobby, results, HUD, menus, studio).
 const THEME_CSS = fs.readFileSync(path.join(__dirname, "theme-esports.css"), "utf-8");
+// Foco: quieter lobby navigation and progressive disclosure, above the legacy theme.
+const FOCO_CSS = fs.readFileSync(path.join(__dirname, "foco-ui.css"), "utf-8");
+const FOCO_UI_JS = fs.readFileSync(path.join(__dirname, "foco-ui.js"), "utf-8");
 // Offline only: hides sign-in, leaderboards, cloud sync and the site's play counts.
 const OFFLINE_CSS = fs.readFileSync(path.join(__dirname, "offline.css"), "utf-8");
 // Moves the lobby sidebar (Quick start, Favorites, Creator, Manual) into the top bar.
@@ -176,6 +179,7 @@ const UI_SCRIPTS = [
   ["RELEASE UPDATES", RELEASE_UPDATES_JS],
   ["VALORANT IMPORT", VALORANT_IMPORT_JS],
   ["BRAND NAME", BRAND_NAME_JS],
+  ["FOCO MENUS", FOCO_UI_JS],
 ];
 // The startup screen goes in on its own, straight away (see createWindow).
 // Test copy: with the recorder on, each script runs under its own name so the slow-frame
@@ -193,7 +197,7 @@ const UI_SCRIPT_BATCH = UI_SCRIPTS.map(([name, source]) => uiScriptRun(name, sou
 // site's own green one. The game window is left alone (it adds these itself, see createWindow);
 // it is recognised by "Electron" in its user agent. Desktop-only features still need the game window.
 const noCloseTag = (text, tag) => text.replace(new RegExp(`</${tag}`, "gi"), `<\\/${tag}`);
-const BROWSER_HEAD = `<style id="aim-browser-theme">${noCloseTag([HIDE_CSS, UI_CSS, THEME_CSS, OFFLINE_CSS].join("\n"), "style")}</style>`;
+const BROWSER_HEAD = `<style id="aim-browser-theme">${noCloseTag([HIDE_CSS, UI_CSS, THEME_CSS, OFFLINE_CSS, FOCO_CSS].join("\n"), "style")}</style>`;
 const BROWSER_BODY = `<script>${noCloseTag(STARTUP_SCREEN_RUN, "script")}</script><script>${noCloseTag(UI_SCRIPT_BATCH, "script")}</script>`;
 function themedForBrowser(html) {
   let out = html.replace(/<\/head>/i, (m) => BROWSER_HEAD + m); // function: no $ patterns
@@ -881,6 +885,7 @@ function createWindow(url) {
       win.webContents.insertCSS(OFFLINE_CSS),
       win.webContents.insertCSS(VALORANT_IMPORT_CSS),
       win.webContents.insertCSS(RELEASE_UPDATES_CSS),
+      win.webContents.insertCSS(FOCO_CSS),
       win.webContents.mainFrame.executeJavaScript(STARTUP_SCREEN_RUN).catch((err) => console.log(`STARTUP SCREEN: ${err}`)),
     ]).catch(() => {}).finally(show);
     win.webContents.executeJavaScript(UI_SCRIPT_BATCH).catch((err) => console.log(`UI SCRIPTS: ${err}`));

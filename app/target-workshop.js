@@ -1,4 +1,4 @@
-// Target Workshop (lobby tab), rebuilt: design B "Gallery" (2-column cards) + full-page Tune screen.
+// Target Workshop: Foco exercise picker with one projected preview + full-page Tune screen.
 // The lobby (ChJ6FlD4.js HallView, marker aim-target-workshop-rebuild) renders an empty
 // <div class="tw-root"> and hands this file an API: state(), play, favorite, tunables, and the
 // game's own 103-degree projection (project/draw). Every preview here is that projection, so a
@@ -424,12 +424,18 @@
     if (state.status === "loading") body = `<div class="tw-empty">Loading target tasks…</div>`;
     else if (state.status === "error") body = `<div class="tw-empty"><p class="tw-note">Could not load target tasks. <button type="button" data-act="retry">Try again</button></p></div>`;
     else if (!items.length) body = `<div class="tw-empty">${q ? "No matching target tasks." : filter === FAV ? "No favorites yet: click the bookmark on a task." : "No target tasks yet."}</div>`;
-    else body = items.map(card).join("");
+    else {
+      const selected = items.find(it => it.shareCode === state.selected) || items[0];
+      body = `<div class="tw-focus">
+        <nav class="tw-picker" aria-label="Choose an exercise">${items.map(it => `<button type="button" class="tw-pick" data-act="select" data-code="${esc(it.shareCode)}" aria-pressed="${it === selected}"><span>${esc(it.name)}</span><small>${esc(it.facts?.length || "")}</small></button>`).join("")}</nav>
+        <div class="tw-selected">${card(selected)}</div>
+      </div>`;
+    }
     root.innerHTML = `<div class="tw-page">
       <div class="tw-head"><div><div class="tw-kicker">Train the basics · precision, reactions, tracking</div><h1 class="tw-title">Target Workshop</h1></div>
         <div class="tw-chips" role="group" aria-label="Filter">${chip("all", "All", state.items.length)}${skills.map((s) => chip(s, s, state.items.filter((it) => it.facts?.skill === s).length)).join("")}${chip(FAV, "Favorites", state.favorites.filter((c) => state.items.some((it) => it.shareCode === c)).length)}</div></div>
       ${q ? `<p class="tw-note">Search "${esc(q)}" · ${items.length} tasks <button type="button" data-act="clear">Clear search</button></p>` : ""}
-      <div class="tw-grid">${body}</div></div>`;
+      <div class="tw-content">${body}</div></div>`;
     queueDraw();
   }
   function card(it) {
